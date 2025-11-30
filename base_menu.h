@@ -33,3 +33,16 @@ void kotak(int x, int y, int w, int h){
     printf("-");}
     printf("+");
 }
+
+void menu(){
+    int x=0, y=0, w=40, h=12;
+    kotak(x, y, w, h);
+    gotoxy(x+15, y+2); printf("MENU UTAMA");
+    gotoxy(x+2, y+4); printf("1. Lihat Produk");
+    gotoxy(x+2, y+5); printf("2. Tambah Produk");
+    gotoxy(x+2, y+6); printf("3. Edit Produk");
+    gotoxy(x+2, y+7); printf("4. Hapus Produk");
+    gotoxy(x+2, y+8); printf("5. Exit");
+
+    gotoxy(x+2, y+10); printf("Pilih (1-5): ");
+}
