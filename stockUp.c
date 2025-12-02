@@ -2,13 +2,14 @@
 #include <stdlib.h>
 #include <windows.h>
 #include "base_menu.h"
+// #include "login_menu.h"
+
 
 struct Produk {
-    char nama[50];
-    char kategori[30];
-    char deskripsi[100];
+    int id;
+    int kategori;
+    char nama[38];
     int stok;
-    float harga;
 } item;
 
 void clear(){
@@ -16,12 +17,13 @@ void clear(){
 }
 
 int main(){
-    
     int choice;
+    
+    keamanan();
     do {
         clear();
 
-        menu();
+        menu5("Main Menu", "Tampil Produk", "Tambah Produk", "Edit Produk", "Hapus Produk", "Keluar");
         scanf("%d", &choice);
         switch(choice) {
             case 1:

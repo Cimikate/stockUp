@@ -1,0 +1,154 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <windows.h>
+// #include "base_menu.h"
+#define USER_DB_FILE "user.dat"
+#define MAXNAME 32
+#define MAXPASS 32
+
+typedef struct {
+    char username[MAXNAME];
+    char password[MAXPASS];
+} User;
+
+// utility: trim trailing newline from fgets
+static void trim_newline(char *s) {
+    size_t len = strlen(s);
+    if (len == 0) return;
+    if (s[len-1] == '\n') s[len-1] = '\0';
+}
+
+int load_user(User *u) {
+    
+    FILE *fp = fopen(USER_DB_FILE, "rb");
+    if (!fp) return 0;
+    if (fread(u, sizeof(User), 1, fp) != 1) {
+        fclose(fp);
+        return 0;
+    }
+    fclose(fp);
+    return 1;
+}
+
+// save user to file, return 1 on success
+int save_user(const User *u) {
+    
+    FILE *fp = fopen(USER_DB_FILE, "wb");
+    if (!fp) return 0;
+    if (fwrite(u, sizeof(User), 1, fp) != 1) {
+        fclose(fp);
+        return 0;
+    }
+    fclose(fp);
+    return 1;
+}
+
+void register_user() {
+    
+    User u;
+    printf("=== Registrasi Pengguna Baru ===\n");
+    printf("Masukan Name: ");
+    if (!fgets(u.username, sizeof u.username, stdin)) return;
+    trim_newline(u.username);
+    if (strlen(u.username) == 0) { printf("Nama tidak bisa kosong.\n"); return; }
+
+    printf("Masukan password: ");
+    if (!fgets(u.password, sizeof u.password, stdin)) return;
+    trim_newline(u.password);
+    if (strlen(u.password) == 0) { printf("Password tidak bisa kosong.\n"); return; }
+
+    if (save_user(&u)) {
+        printf("Registrasi berhasil. \n");
+    } else {
+        printf("Gagal registrasi. Silahkan cek batasan file.\n");
+    }
+}
+
+int login_user() {
+    
+    User u;
+    if (!load_user(&u)) {
+        printf("No user registered yet. Please register first.\n");
+        return 0;
+    }
+    char uname[MAXNAME], pass[MAXPASS];
+    printf("=== Login ===\n");
+    printf("Username: ");
+    if (!fgets(uname, sizeof uname, stdin)) return 0;
+    trim_newline(uname);
+    printf("Password: ");
+    if (!fgets(pass, sizeof pass, stdin)) return 0;
+    trim_newline(pass);
+
+    if (strcmp(uname, u.username) == 0 && strcmp(pass, u.password) == 0) {
+        printf("Login successful. Welcome, %s!\n", u.username);
+        return 1;
+    } else {
+        printf("Login failed: wrong username or password.\n");
+        return 0;
+    }
+}
+
+int keamanan() {
+    int choice = 0;
+    User db;
+    int hasUser = load_user(&db);
+    while(1) {
+        cls();
+        if (!hasUser) {
+            // no user yet: show Register option
+            menu3("Selamat Datang", "Login", "Registrasi", "Exit");
+        } else {
+            // user exists: hide Register (show change data instead)
+            menu3("Selamat Datang", "Login", "Ubah Data", "Exit");
+        }
+
+        char line[16];
+        if (!fgets(line, sizeof line, stdin)) break;
+        choice = atoi(line);
+
+        if (!hasUser) {
+            switch (choice) {
+                case 1:
+                    if (login_user()) {
+                        printf("Exiting after successful login.\n");
+                        return 0; // exit function on success
+                    }
+                    break;
+                case 2:
+                    register_user();
+                    hasUser = load_user(&db); // refresh state after registration
+                    break;
+                case 3:
+                    printf("Exiting.\n");
+                    return 0;
+                default:
+                    printf("Invalid choice.\n");
+                    break;
+            }
+        } else {
+            // hasUser == 1
+            switch (choice) {
+                case 1:
+                    if (login_user()) {
+                        printf("Exiting after successful login.\n");
+                        return 0;
+                    }
+                    break;
+                case 2:
+                    // allow changing username/password (acts like re-register)
+                    register_user();
+                    hasUser = load_user(&db); // reload
+                    break;
+                case 3:
+                    printf("Exiting.\n");
+                    return 0;
+                default:
+                    printf("Invalid choice.\n");
+                    break;
+            }
+        }
+    }
+    return 0;
+}
