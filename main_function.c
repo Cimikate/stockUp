@@ -4,791 +4,498 @@
 #include <ctype.h>
 #include <time.h>
 
+#define MAX_BARANG 1000
+#define PER_PAGE 20
+#define NAMA_FILE "StokBarang.txt"
+#define LOG_FILE "log_transaksi.txt"
+
+int i;
+
 typedef struct {
-    int nomor;
-    char nama_barang[40];
-    int jumlah_barang;
-} produk;
+    int id;
+    char nama[40];
+    int stok;
+} Produk;
 
-const char* get_nama_kategori(int kategori_kode) {
-    switch(kategori_kode) {
-        case 1: return "Makanan";
-        case 2: return "Minuman";
-        case 3: return "Snack";
-        case 4: return "Bahan Pokok";
-        case 5: return "Elektronik";
-        case 6: return "Pakaian";
-        case 7: return "Alat Tulis";
-        case 8: return "Obat";
-        case 9: return "Kosmetik";
-        case 10: return "Alat Rumah";
-        case 11: return "Buku";
-        case 12: return "Mainan";
-        case 13: return "Olahraga";
-        case 14: return "Kendaraan";
-        case 15: return "Pertanian";
-        case 16: return "Peternakan";
-        case 17: return "Perikanan";
-        case 18: return "Perkakas";
-        case 19: return "Furniture";
-        case 20: return "Memancing";
-        default: return "Lainnya";
-    }
-}
-
-// Fungsi untuk mendapatkan kode kategori dari ID
-int get_kategori_from_id(int id) {
-    // ID format: 1ccnn
-    return (id / 100) % 100;
-}
-
-/* Fungsi yang dipakai */
-void cariProduk();
-void produkKeluar();
-void cariProdul();
-void editProduk();
-void hapusProduk();
-int cmp_produk(const void *a, const void *b); //untuk sorting datanya
+const char* kategori[] = {
+    "Lainnya", "Makanan", "Minuman", "Snack", "Bahan Pokok",
+    "Elektronik", "Pakaian", "Alat Tulis", "Obat", "Kosmetik",
+    "Alat Rumah", "Buku", "Mainan", "Olahraga", "Kendaraan",
+    "Pertanian", "Peternakan", "Perikanan", "Perkakas", "Furniture",
+    "Memancing"
+};
 
 void pause() {
-    printf("\nTekan ENTER untuk melanjutkan");
+    printf("\nTekan ENTER untuk melanjutkan...");
     getchar();
 }
 
+int kategoriDariID(int id) { 
+    return (id / 100) % 100; 
+}
+
+// Operasi file dengan array statis
+int bacaProduk(Produk arr[]) {
+    FILE* f = fopen(NAMA_FILE, "r");
+    if (!f) return 0;
+    
+    int i = 0;
+    while (fscanf(f, "%d|%[^|]|%d\n", &arr[i].id, arr[i].nama, &arr[i].stok) == 3) {
+        i++;
+        if (i >= MAX_BARANG) break;
+    }
+    fclose(f);
+    return i;
+}
+
+void simpanProduk(Produk arr[], int n) {
+    FILE* f = fopen(NAMA_FILE, "w");
+    int i;
+    for (i = 0; i < n; i++)
+        fprintf(f, "%d|%s|%d\n", arr[i].id, arr[i].nama, arr[i].stok);
+    fclose(f);
+}
+
+// Fungsi untuk sorting
+int bandingID(const void *a, const void *b) {
+    Produk *p1 = (Produk *)a;
+    Produk *p2 = (Produk *)b;
+    return p1->id - p2->id;
+}
+
+// Fungsi untuk lowercase
+void keLower(char *str) {
+    for (i = 0; str[i]; i++) {
+        str[i] = tolower(str[i]);
+    }
+}
+
+// Fungsi tampil produk dengan perhalaman
+void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
+    if (sort) {qsort(data, n, sizeof(Produk), bandingID);}
+    
+    int page = 0;
+    int totalPage = (n + PER_PAGE - 1) / PER_PAGE;
+    
+    while (1) {
+        clear();
+        title_menu(judul);
+        printf("Halaman %d/%d (Total: %d data)\n\n", page + 1, totalPage, n);
+        
+        // Header tabel
+        printf("%-6s | %-13s | %-25s | %s\n", "ID", "Kategori", "Nama Produk", "Stok");
+        printf("--------------------------------------------------------------\n");
+        
+        // Tampilkan data per halaman
+        int start = page * PER_PAGE;
+        int end = start + PER_PAGE;
+        if (end > n) end = n;
+        
+        for (i = start; i < end; i++) {
+            int k = kategoriDariID(data[i].id);
+            if (k < 0 || k > 20) k = 0;
+            printf("%05d  | %-13s | %-25s | %d\n", 
+                   data[i].id, kategori[k], data[i].nama, data[i].stok);
+        }
+        
+        // Navigasi
+        printf("\n[N]ext  [P]rev  [S]earch  [Q]uit");
+        if (totalPage > 1) {
+            printf("  [G]oto page");
+        }
+        printf("\nPilihan: ");
+        
+        char pilih = getchar();
+        if (pilih == '\n') continue;
+        
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+        
+        switch (toupper(pilih)) {
+            case 'N':
+                if (page < totalPage - 1) page++;
+                break;
+                
+            case 'P':
+                if (page > 0) page--;
+                break;
+                
+            case 'S': {
+                // Pencarian langsung
+                char kata[40];
+                printf("Cari (ID/nama): ");
+                fgets(kata, sizeof(kata), stdin);
+                kata[strcspn(kata, "\n")] = 0;
+                
+                if (strlen(kata) == 0) break;
+                
+                // Filter hasil
+                Produk hasil[MAX_BARANG];
+                int hasilCnt = 0;
+                
+                for (i = 0; i < n; i++) {
+                    char idStr[10];
+                    sprintf(idStr, "%d", data[i].id);
+                    
+                    // Salin dan konversi ke lowercase untuk pencarian case-insensitive
+                    char namaLower[40], kataLower[40];
+                    strcpy(namaLower, data[i].nama);
+                    strcpy(kataLower, kata);
+                    int j;
+                    for (j = 0; namaLower[j]; j++) namaLower[j] = tolower(namaLower[j]);
+                    for (j = 0; kataLower[j]; j++) kataLower[j] = tolower(kataLower[j]);
+                    
+                    if (strstr(idStr, kata) != NULL || 
+                        strstr(namaLower, kataLower) != NULL) {
+                        hasil[hasilCnt++] = data[i];
+                    }
+                }
+                
+                if (hasilCnt == 0) {
+                    printf("\nTidak ditemukan!\n");
+                    pause();
+                } else {
+                    printf("\nDitemukan %d hasil:\n", hasilCnt);
+                    for (i = 0; i < hasilCnt && i < 20; i++) {
+                        int k = kategoriDariID(hasil[i].id);
+                        printf("ID: %05d | Kategori: %s | Nama: %s | Stok: %d\n", 
+                               hasil[i].id, kategori[k], hasil[i].nama, hasil[i].stok);
+                    }
+                    if (hasilCnt > 20) {
+                        printf("... dan %d hasil lainnya\n", hasilCnt - 20);
+                    }
+                    pause();
+                }
+                break;
+            }
+                
+            case 'G':
+                if (totalPage > 1) {
+                    int target;
+                    printf("Masukkan nomor halaman (1-%d): ", totalPage);
+                    scanf("%d", &target);
+                    while ((c = getchar()) != '\n' && c != EOF);
+                    
+                    if (target >= 1 && target <= totalPage) {
+                        page = target - 1;
+                    } else {
+                        printf("Halaman tidak valid!\n");
+                        pause();
+                    }
+                }
+                break;
+                
+            case 'Q':
+                return;
+                
+            default:
+                printf("Pilihan tidak valid!\n");
+                pause();
+        }
+    }
+}
+
+// Modul utama tampil produk
+void tampilProduk() {
+    Produk data[MAX_BARANG];
+    int n = bacaProduk(data);
+    if (n == 0) { printf("Tidak ada data Produk!\n"); pause(); return;}
+    tampilDenganPaging(data, n, 1, "DAFTAR PRODUK");
+}
+
 void tambahProduk() {
-    int kategori;
-    produk d;
-    
     clear();
-    title_menu("TAMBAH PRODUK BARU");
-    printf(" Code Kategori\n");
-    printf(
-        "  1:  Makanan       2:  Minuman       3:  Snack         4:  Bahan Pokok   5:  Elektronik\n"
-        "  6:  Pakaian       7:  Alat Tulis    8:  Obat          9:  Kosmetik     10:  Alat Rumah\n"
-        " 11:  Buku         12:  Mainan       13:  Olahraga     14:  Kendaraan    15:  Pertanian\n"
-        " 16:  Peternakan   17:  Perikanan    18:  Perkakas     19:  Furniture    20:  Memancing\n 21-99: Lainnya\n\n"
-    );
-    printf("Masukkan kode kategori (0-99): ");
-    if (scanf("%d", &kategori) != 1) {
-        printf("Input tidak valid!\n");
-        while (getchar() != '\n');  // Clear buffer
-        pause();
-        return;
+    title_menu("TAMBAH PRODUK");
+    Produk b;
+    int kode;
+    printf("Kategori Produk:\n");
+    // Tampilkan daftar kategori lengkap (0..20)
+    int k;
+    for (k = 0; k <= 20; k++) {
+        printf("%2d: %-13s", k, kategori[k]);
+        if (k % 4 == 3 || k == 20) printf("\n");
+        else printf("  ");
     }
-    while (getchar() != '\n');  // Clear buffer
+    printf("\nKategori (1-20, 0=Lainnya): ");
+    if (scanf("%d", &kode) != 1) {printf("Input tidak valid!\n");pause();return;} getchar();
+    if (kode < 0 || kode > 20) kode = 0;
+
+    printf("Nama Produk: ");
+    fgets(b.nama, sizeof(b.nama), stdin);
+    b.nama[strcspn(b.nama, "\n")] = 0;
     
-    if (kategori < 0 || kategori > 99) {
-        printf("Kategori harus 0-99.\n");
-        pause();
-        return;
-    }
-    
-    // Input nama
-    printf("Nama Barang: ");
-    fgets(d.nama_barang, sizeof(d.nama_barang), stdin);
-    d.nama_barang[strcspn(d.nama_barang, "\n")] = 0;
-    
-    // Input jumlah
-    printf("Jumlah Stok: ");
-    if (scanf("%d", &d.jumlah_barang) != 1) {
-        printf("Input tidak valid!\n");
-        while (getchar() != '\n');
-        pause();
-        return;
-    }
-    while (getchar() != '\n');
-    
-    if (d.jumlah_barang < 0) {
-        printf("Jumlah tidak boleh negatif.\n");
-        pause();
-        return;
-    }
+    printf("Stok Awal: ");
+    if (scanf("%d", &b.stok) != 1) {printf("Input tidak valid!\n");pause();return;}getchar();
+    if (b.stok < 0) {printf("Stok tidak boleh negatif!\n");pause();return;}
     
     // Generate ID
-    FILE *fp = fopen("StokBarang.txt", "r");
+    Produk existing[MAX_BARANG];
+    int n = bacaProduk(existing);
     int max_seq = 0;
-    
-    if (fp) {
-        char line[100];
-        int id;
-        while (fgets(line, sizeof(line), fp)) {
-            if (sscanf(line, "%d", &id) == 1) {
-                int cat = (id / 100) % 100;
-                int seq = id % 100;
-                if (cat == kategori && seq > max_seq) {
-                    max_seq = seq;
-                }
-            }
+    int i;
+    for (i = 0; i < n; i++) {
+        if (kategoriDariID(existing[i].id) == kode) {
+            int seq = existing[i].id % 100;
+            if (seq > max_seq) max_seq = seq;
         }
-        fclose(fp);
     }
     
-    if (max_seq >= 99) {
-        printf("Kategori %d sudah penuh!\n", kategori);
-        pause();
-        return;
-    }
+    if (max_seq >= 99) {printf("Kategori ini sudah penuh!\n");pause();return;} 
+    b.id = 10000 + (kode * 100) + (max_seq + 1);
     
-    d.nomor = 10000 + (kategori * 100) + (max_seq + 1);
-    
-    // Simpan ke file
-    fp = fopen("StokBarang.txt", "a");
-    if (!fp) {
+    // Simpan
+    FILE* f = fopen(NAMA_FILE, "a");
+    if (!f) {
         printf("Gagal membuka file!\n");
         pause();
         return;
     }
-    
-    fprintf(fp, "%d|%s|%d\n", d.nomor, d.nama_barang, d.jumlah_barang);
-    fclose(fp);
+    fprintf(f, "%d|%s|%d\n", b.id, b.nama, b.stok);
+    fclose(f);
     
     printf("\nProduk berhasil ditambahkan!\n");
-    printf("ID: %05d\n", d.nomor);
+    printf("ID Produk: %05d\n", b.id);
+    printf("Kategori: %s\n", kategori[kode]);
+    printf("Nama: %s\n", b.nama);
+    printf("Stok: %d\n", b.stok);
     pause();
-}
-
-void tampilProduk() {
-    FILE *pf = fopen("StokBarang.txt", "r");
-    if (!pf) { printf("Belum ada data!\n"); pause(); return; }
-
-    produk *arr = NULL;
-    int cap = 0, cnt = 0;
-    char line[200];
-
-    while (fgets(line, sizeof(line), pf)) {
-        produk tmp;
-        if (sscanf(line, "%d|%[^|]|%d", &tmp.nomor, tmp.nama_barang, &tmp.jumlah_barang) >= 2) {
-            if (cnt >= cap) {
-                cap = (cap == 0) ? 64 : cap * 2;
-                produk *n = (produk *)realloc(arr, sizeof(produk) * cap);
-                if (!n) { free(arr); fclose(pf); printf("Memori tidak cukup\n"); pause(); return; }
-                arr = n;
-            }
-            arr[cnt++] = tmp;
-        }
-    }
-    fclose(pf);
-
-    if (cnt == 0) { printf("Belum ada data!\n"); pause(); free(arr); return; }
-
-    qsort(arr, cnt, sizeof(produk), cmp_produk);
-
-    int perpage = 20;
-    int page = 0;
-    int pages = (cnt + perpage - 1) / perpage;
-    int i;
-    
-    while (1) {
-        clear();
-        title_menu("DATA STOK BARANG");
-        
-        printf("Halaman %d/%d (Total: %d data)\n", page + 1, pages, cnt);
-        printf("================================================================================\n");
-        printf("   ID    |   KATEGORI   |          NAMA BARANG          |  STOK  \n");
-        printf("================================================================================\n");
-
-        int start = page * perpage;
-        int end = start + perpage;
-        if (end > cnt) end = cnt;
-        
-        for (i = start; i < end; i++) {
-            int kategori_kode = get_kategori_from_id(arr[i].nomor);
-            const char* nama_kategori = get_nama_kategori(kategori_kode);
-            
-            printf(" %05d   | %-12s | %-30s | %6d \n", 
-                   arr[i].nomor, 
-                   nama_kategori, 
-                   arr[i].nama_barang, 
-                   arr[i].jumlah_barang);
-        }
-        
-        printf("================================================================================\n");
-        
-        printf("\nNavigasi: (N)ext  (P)rev  (S)earch  (Q)uit\n");
-        printf("Pilihan: ");
-        
-        int ch = getchar(); 
-        while (ch == '\n') ch = getchar();
-        
-        if (ch == 'S' || ch == 's') {
-            int c; 
-            while ((c = getchar()) != '\n' && c != EOF);
-            cariProduk();
-            continue;}  
-        if (ch == 'N' || ch == 'n') { 
-            if (page < pages - 1) page++;  }
-        else if (ch == 'P' || ch == 'p') { 
-            if (page > 0) page--; }
-        else if (ch == 'Q' || ch == 'q') { 
-            int c; 
-            while ((c = getchar()) != '\n' && c != EOF);
-            break; }
-        int c; 
-        while ((c = getchar()) != '\n' && c != EOF);
-    }
-
-    free(arr);
-    pause();
-}
-
-int cmp_produk(const void *a, const void *b) {
-    const produk *pa = (const produk *)a;
-    const produk *pb = (const produk *)b;
-    if (pa->nomor < pb->nomor) return -1;
-    if (pa->nomor > pb->nomor) return 1;
-    return 0;
 }
 
 void cariProduk() {
-    FILE *pf = fopen("StokBarang.txt", "r");
-    if (!pf) { printf("File tidak ditemukan!\n"); pause(); return; }
-
-    char input[80];
-    clear(); 
+    char keyword[40];
+    clear();
     title_menu("CARI PRODUK");
     
-
     printf("Masukkan ID atau nama: ");
-    fgets(input, sizeof(input), stdin);
-    input[strcspn(input, "\n")] = 0;
-
-    /* trim leading/trailing whitespace */
-    size_t start = 0;
-    while (start < strlen(input) && isspace((unsigned char)input[start])) start++;
-    if (start > 0) memmove(input, input + start, strlen(input + start) + 1);
-    while (strlen(input) > 0 && isspace((unsigned char)input[strlen(input)-1])) input[strlen(input)-1] = '\0';
-    if (strlen(input) == 0) { printf("Input kosong. Batalkan pencarian.\n"); fclose(pf); pause(); return; }
-
-    int is_number = 1;
-    size_t i;
-    for ( i = 0; i < strlen(input); i++) { if (!isdigit((unsigned char)input[i])) { is_number = 0; break; } }
-
-    int found = 0;
-    char line[200];
-    produk d;
-
-    clear(); 
-    title_menu("HASIL PENCARIAN");
+    fgets(keyword, sizeof(keyword), stdin);
+    keyword[strcspn(keyword, "\n")] = 0;
     
-    if (is_number && strlen(input) > 0) {
-        int id = atoi(input);
-        while (fgets(line, sizeof(line), pf)) {
-            if (sscanf(line, "%d|%[^|]|%d", &d.nomor, d.nama_barang, &d.jumlah_barang) >= 2) {
-                int kategori_kode = get_kategori_from_id(d.nomor);
-                const char* nama_kategori = get_nama_kategori(kategori_kode);
-                if (d.nomor == id) {
-                    printf("ID Produk   : %d\n", d.nomor);
-                    printf("Kategori    : %s\n", nama_kategori);
-                    printf("Nama Barang : %s\n", d.nama_barang);
-                    printf("Jumlah Stok : %d\n", d.jumlah_barang);
-                    found = 1; break;
-                }
-            }
-        }
-    } else {
-        /* case-insensitive substring search */
-        while (fgets(line, sizeof(line), pf)) {
-            if (sscanf(line, "%d|%[^|]|%d", &d.nomor, d.nama_barang, &d.jumlah_barang) >= 2) {
-                char nama_lower[64]; char input_lower[80];
-                size_t i;
-                for (i = 0; i < strlen(d.nama_barang) && i < sizeof(nama_lower)-1; i++) nama_lower[i] = tolower((unsigned char)d.nama_barang[i]);
-                nama_lower[i] = '\0';
-                for (i = 0; i < strlen(input) && i < sizeof(input_lower)-1; i++) input_lower[i] = tolower((unsigned char)input[i]);
-                input_lower[i] = '\0';
-                int kategori_kode = get_kategori_from_id(d.nomor);
-                const char* nama_kategori = get_nama_kategori(kategori_kode);
-                if (strstr(nama_lower, input_lower) != NULL) {
-                    printf("ID Produk   : %d\n", d.nomor);
-                    printf("Kategori    : %s\n", nama_kategori);
-                    printf("Nama Barang : %s\n", d.nama_barang);
-                    printf("Jumlah Stok : %d\n\n", d.jumlah_barang);
-                    found = 1;
-                }
-            }
+    if (strlen(keyword) == 0) {printf("Input kosong!\n");pause();return;}
+    
+    Produk data[MAX_BARANG];
+    int n = bacaProduk(data);
+    Produk hasil[MAX_BARANG];
+    int hasilCnt = 0;
+    
+    for (i = 0; i < n; i++) {
+        char id_str[10];
+        sprintf(id_str, "%d", data[i].id);
+        
+        // Salin string untuk lowercase
+        char nama_lower[40], keyword_lower[40];
+        strcpy(nama_lower, data[i].nama);
+        strcpy(keyword_lower, keyword);
+        
+        // Convert to lowercase
+        int j;
+        for (j = 0; nama_lower[j]; j++) nama_lower[j] = tolower(nama_lower[j]);
+        for (j = 0; keyword_lower[j]; j++) keyword_lower[j] = tolower(keyword_lower[j]);
+        
+        if (strstr(id_str, keyword) != NULL || strstr(nama_lower, keyword_lower) != NULL) {
+            hasil[hasilCnt++] = data[i];
         }
     }
-
-    if (!found) printf("Produk tidak ditemukan.\n");
-    fclose(pf); pause();
+    
+    if (hasilCnt == 0) {
+        printf("\nTidak ditemukan produk dengan kata kunci: %s\n", keyword);
+        pause();
+    } else { tampilDenganPaging(hasil, hasilCnt, 1, "HASIL PENCARIAN");}
 }
 
 void editProduk() {
     int id;
-    char konfirmasi;
-    produk d;
-    int found = 0;
-    char line[200];
-    char nama_baru[40];
-    int jumlah_baru;
-
     clear();
     title_menu("EDIT PRODUK");
-
-    printf("Masukkan ID produk yang akan diedit: ");
-    if (scanf("%d", &id) != 1) { 
-        int c;
-        while ((c = getchar()) != '\n' && c != EOF);
-        printf("Input tidak valid\n"); 
-        pause(); 
-        return; 
-    }
- 
-    while (getchar() != '\n');
-
-    // Buka file untuk membaca
-    FILE *pf = fopen("StokBarang.txt", "r");
-    if (!pf) { 
-        printf("File tidak ditemukan!\n"); 
-        pause(); 
-        return; 
-    }
-
-    // Cari produk berdasarkan ID
-    found = 0;
-    while (fgets(line, sizeof(line), pf)) {
-        if (sscanf(line, "%d|%[^|]|%d", &d.nomor, d.nama_barang, &d.jumlah_barang) >= 2) {
-            if (d.nomor == id) {
-                found = 1;
-                break;
-            }
+    
+    printf("ID Produk yang akan diedit: ");
+    if (scanf("%d", &id) != 1) {printf("Input tidak valid!\n"); pause();return;}
+    getchar();
+    
+    Produk data[MAX_BARANG];
+    int n = bacaProduk(data);
+    int idx = -1;
+    i;
+    for (i = 0; i < n; i++) {
+        if (data[i].id == id) { 
+            idx = i; 
+            break; 
         }
     }
-
-    if (!found) {
-        fclose(pf); 
-        printf("Produk dengan ID %05d tidak ditemukan.\n", id);
-        pause();
-        return;
-    }
-
-    // Tampilkan data lama
-    printf("\n=== DATA PRODUK LAMA ===\n");
-    printf("ID Produk      : %05d\n", d.nomor);
-    printf("Nama Barang    : %s\n", d.nama_barang);
-    printf("Jumlah Stok    : %d\n", d.jumlah_barang);
-    printf("=========================\n");
-
-    // Input data baru
-    printf("\n=== MASUKKAN DATA BARU ===\n");
-    printf("(Kosongkan untuk tetap menggunakan data lama)\n\n");
     
-    // Input nama baru
-    printf("Nama Barang baru [%s]: ", d.nama_barang);
+    if (idx == -1) { printf("ID %05d tidak ditemukan!\n", id); pause(); return; }
+    
+    printf("\nData lama:\n");
+    printf("Nama: %s\n", data[idx].nama);
+    printf("Stok: %d\n", data[idx].stok);
+    
+    printf("\nMasukkan data baru (kosongkan jika tidak ingin mengubah):\n");
+    
+    printf("Nama baru [%s]: ", data[idx].nama);
+    char nama_baru[40];
     fgets(nama_baru, sizeof(nama_baru), stdin);
     nama_baru[strcspn(nama_baru, "\n")] = 0;
     
-    // Jika input kosong, gunakan nama lama
-    if (strlen(nama_baru) == 0) {
-        strcpy(nama_baru, d.nama_barang);
+    if (strlen(nama_baru) > 0) {
+        strcpy(data[idx].nama, nama_baru);
     }
     
-    // Input jumlah baru
-    char jumlah_str[20];
-    printf("Jumlah Barang baru [%d]: ", d.jumlah_barang);
-    fgets(jumlah_str, sizeof(jumlah_str), stdin);
-    jumlah_str[strcspn(jumlah_str, "\n")] = 0;
+    printf("Stok baru [%d]: ", data[idx].stok);
+    char stok_str[20];
+    fgets(stok_str, sizeof(stok_str), stdin);
+    stok_str[strcspn(stok_str, "\n")] = 0;
     
-    // Jika input kosong, gunakan jumlah lama
-    if (strlen(jumlah_str) == 0) {
-        jumlah_baru = d.jumlah_barang;
-    } else {
-        // Validasi input angka
+    if (strlen(stok_str) > 0) {
+        // Validasi angka
         int valid = 1;
-        int i;
-        for (i = 0; i < strlen(jumlah_str); i++) {
-            if (!isdigit((unsigned char)jumlah_str[i])) {
+        for (i = 0; stok_str[i]; i++) {
+            if (!isdigit(stok_str[i]) && stok_str[i] != '-') {
                 valid = 0;
                 break;
             }
         }
         
-        if (!valid) {
-            fclose(pf);
-            printf("Input jumlah tidak valid. Harus angka.\n");
-            pause();
-            return;
-        }
-        
-        jumlah_baru = atoi(jumlah_str);
-        if (jumlah_baru < 0) {
-            fclose(pf);
-            printf("Jumlah barang tidak boleh negatif.\n");
-            pause();
-            return;
-        }
+        if (valid) {
+            int stok_baru = atoi(stok_str);
+            if (stok_baru >= 0) {
+                data[idx].stok = stok_baru;
+            } else { printf("Stok tidak boleh negatif!\n"); pause(); return;}
+        } else {printf("Input stok tidak valid!\n"); pause(); return;}
     }
     
-    // Tampilkan data yang akan disimpan
-    printf("\n=== DATA YANG AKAN DISIMPAN ===\n");
-    printf("ID Produk      : %05d (tidak dapat diubah)\n", d.nomor);
-    printf("Nama Barang    : %s\n", nama_baru);
-    printf("Jumlah Stok    : %d\n", jumlah_baru);
-    printf("===============================\n");
+    printf("\nKonfirmasi penyimpanan? (y/n): ");
+    char konfirm = getchar();
+    getchar();
     
-    // Konfirmasi
-    printf("\nApakah Anda yakin ingin menyimpan perubahan? (Y/N): ");
-    scanf(" %c", &konfirmasi);
-
-    while (getchar() != '\n');
-    
-    if (konfirmasi != 'Y' && konfirmasi != 'y') {
-        fclose(pf);
-        printf("Perubahan dibatalkan.\n");
-        pause();
-        return;
-    }
-
-    // Buat file temporary
-    rewind(pf); 
-    FILE *temp = fopen("temp.txt", "w");
-    if (!temp) {
-        fclose(pf);
-        printf("Gagal membuat file sementara\n");
-        pause();
-        return;
-    }
-
-    int diedit = 0;
-    rewind(pf);
-    while (fgets(line, sizeof(line), pf)) {
-        int current_id;
-        char current_nama[40];
-        int current_jumlah;
-        
-        // ambil baris untuk id
-        if (sscanf(line, "%d|%[^|]|%d", &current_id, current_nama, &current_jumlah) >= 2) {
-            if (current_id == id && !diedit) {
-                // Tulis data yang sudah diedit
-                fprintf(temp, "%d|%s|%d\n", d.nomor, nama_baru, jumlah_baru);
-                diedit = 1;
-            } else {
-                // Tulis data lain tanpa perubahan
-                fputs(line, temp);
-            }
-        } else {
-            // Jika format tidak sesuai, tetap tulis baris aslinya
-            fputs(line, temp);
-        }
-    }
-
-    fclose(pf);
-    fclose(temp);
-
-    // Ganti file lama 
-    if (remove("StokBarang.txt") != 0) {
-        printf("Gagal menghapus file lama\n");
-        pause();
-        return;
-    }
-    
-    if (rename("temp.txt", "StokBarang.txt") != 0) {
-        printf("Gagal mengganti file\n");
-        pause();
-        return;
-    }
-
-    printf("\nProduk dengan ID %05d berhasil diedit!\n", id);
+    if (konfirm == 'y' || konfirm == 'Y') {
+        simpanProduk(data, n);
+        printf("Data berhasil diupdate!\n");
+    } else {printf("Perubahan dibatalkan!\n");}
     pause();
 }
 
 void hapusProduk() {
-    FILE *pf = fopen("StokBarang.txt", "r");
-    if (!pf) { 
-        printf("File tidak ditemukan!\n"); 
-        pause(); 
-        return; 
-    }
-
     int id;
-    char konfirmasi;
-    produk d;
-    int found = 0;
-    char line[200];
-
     clear();
     title_menu("HAPUS PRODUK");
-
-    printf("Masukkan ID produk yang akan dihapus: ");
-    if (scanf("%d", &id) != 1) { 
-        getchar(); 
-        printf("Input tidak valid\n"); 
-        fclose(pf);
-        pause(); 
-        return; 
-    }
-    getchar();
-
-    // Cari produk berdasarkan ID 
-    rewind(pf);
-    while (fgets(line, sizeof(line), pf)) {
-        if (sscanf(line, "%d|%[^|]|%d", &d.nomor, d.nama_barang, &d.jumlah_barang) >= 2) {
-            if (d.nomor == id) {
-                found = 1;
-                printf("\n=== DATA PRODUK YANG AKAN DIHAPUS ===\n");
-                printf("ID Produk      : %05d\n", d.nomor);
-                printf("Nama Barang    : %s\n", d.nama_barang);
-                printf("Jumlah Stok    : %d\n", d.jumlah_barang);
-                printf("=====================================\n");
-
-                printf("\nApakah Anda yakin ingin menghapus produk ini? (Y/N): ");
-                scanf(" %c", &konfirmasi);
-                getchar();
-                
-                if (konfirmasi != 'Y' && konfirmasi != 'y') {
-                    printf("Penghapusan dibatalkan.\n");
-                    fclose(pf);
-                    pause();
-                    return;
-                }
-                break;
-            }
-        }
-    }
-
-    if (!found) {
-        printf("Produk dengan ID %05d tidak ditemukan.\n", id);
-        fclose(pf);
-        pause();
-        return;
-    }
-
-    // Buat file sementara 
-    rewind(pf);
-    FILE *temp = fopen("temp.txt", "w");
-    if (!temp) {
-        printf("Gagal membuat file sementara\n");
-        fclose(pf);
-        pause();
-        return;
-    }
-
-    int dihapus = 0;
-    while (fgets(line, sizeof(line), pf)) {
-        int current_id;
-        sscanf(line, "%d", &current_id);
-        
-        if (current_id == id && !dihapus) {
-            dihapus = 1;  
-            continue;
-        }
-        fputs(line, temp);
-    }
-
-    fclose(pf);
-    fclose(temp);
-
-    if (remove("StokBarang.txt") != 0) {
-        printf("Gagal menghapus file lama\n");
-        pause();
-        return;
-    }
     
-    if (rename("temp.txt", "StokBarang.txt") != 0) {
-        printf("Gagal mengganti file\n");
-        pause();
-        return;
-    }
-
-    printf("\nProduk dengan ID %05d berhasil dihapus!\n", id);
-    pause();
-}
-
-
-void produkTransaksi() {
-    int pilihan_transaksi;
-    int id, jumlah;
-    
-    clear();
-    title_menu("TRANSAKSI PRODUK");
-    
-    printf(" Pilih jenis transaksi:\n");
-    printf(" 1. Produk Masuk (Tambah Stok)\n");
-    printf(" 2. Produk Keluar (Kurangi Stok)\n");
-    printf(" 0. Batal\n");
-    printf(" \nPilihan: ");
-    
-    if (scanf("%d", &pilihan_transaksi) != 1) {
-        printf("Input tidak valid!\n");
-        pause();
-        return;
-    }
-    
-    if (pilihan_transaksi == 0) {
-        printf("Transaksi dibatalkan.\n");
-        pause();
-        return;
-    }
-    
-    if (pilihan_transaksi != 1 && pilihan_transaksi != 2) {
-        printf("Pilihan tidak valid!\n");
-        pause();
-        return;
-    }
- 
-    clear();
-    if (pilihan_transaksi == 1) {
-        title_menu("PRODUK MASUK");
-    } else {
-        title_menu("PRODUK KELUAR");
-    }
-    
-    printf("Masukkan ID produk: ");
+    printf("ID Produk yang akan dihapus: ");
     if (scanf("%d", &id) != 1) {
         printf("Input tidak valid!\n");
         pause();
-        return;
-    }
+        return;}
+    getchar();
     
-    FILE *pf = fopen("StokBarang.txt", "r");
-    if (!pf) {
-        printf("File tidak ditemukan!\n");
-        pause();
-        return;
-    }
-
-    produk d;
-    int found = 0;
-    char line[200];
-
-    rewind(pf);
-    while (fgets(line, sizeof(line), pf)) {
-        if (sscanf(line, "%d|%[^|]|%d", &d.nomor, d.nama_barang, &d.jumlah_barang) >= 2) {
-            if (d.nomor == id) {
-                found = 1;
-                break;
-            }
+    Produk data[MAX_BARANG];
+    int n = bacaProduk(data);
+    Produk baru[MAX_BARANG];
+    int j = 0;
+    int idx = -1;
+    int i;
+    for (i = 0; i < n; i++) {
+        if (data[i].id == id) {
+            idx = i;
+            continue;
         }
+        baru[j++] = data[i];
     }
     
-    if (!found) {
-        fclose(pf);
-        printf("Produk dengan ID %d tidak ditemukan!\n", id);
-        pause();
-        return;
-    }
-  
-    printf("\n--- DATA PRODUK ---\n");
-    printf("ID Produk    : %d\n", d.nomor);
-    printf("Nama Barang  : %s\n", d.nama_barang);
-    printf("Stok Saat Ini: %d\n", d.jumlah_barang);
-    
-    if (pilihan_transaksi == 1) {
-        printf("\nJumlah yang akan ditambahkan: ");
-    } else {
-        printf("\nJumlah yang akan dikeluarkan: ");
+    if (idx == -1) { 
+        printf("ID %05d tidak ditemukan!\n", id); 
+        pause(); 
+        return; 
     }
     
-    if (scanf("%d", &jumlah) != 1) {
-       
-        fclose(pf);
-        printf("Input tidak valid!\n");
-        pause();
-        return;
-    }
- 
-    // Validasi jumlah
-    if (jumlah <= 0) {
-        fclose(pf);
-        printf("Jumlah harus lebih dari 0!\n");
-        pause();
-        return;
-    }
+    printf("\nData yang akan dihapus:\n");
+    printf("ID: %05d\n", data[idx].id);
+    printf("Kategori: %s\n", kategori[kategoriDariID(data[idx].id)]);
+    printf("Nama: %s\n", data[idx].nama);
+    printf("Stok: %d\n", data[idx].stok);
     
-    if (pilihan_transaksi == 2 && jumlah > d.jumlah_barang) {
-        fclose(pf);
-        printf("Stok tidak cukup!\n");
-        printf("Stok tersedia: %d\n", d.jumlah_barang);
-        printf("Jumlah diminta: %d\n", jumlah);
-        pause();
-        return;
-    }
+    printf("\nYakin ingin menghapus? (y/n): ");
+    char konfirm = getchar();
+    getchar();
     
+    if (konfirm == 'y' || konfirm == 'Y') {
+        simpanProduk(baru, j);
+        printf("Data berhasil dihapus!\n");
+    } else {printf("Penghapusan dibatalkan!\n");} 
+    pause();
+}
 
-    int stok_awal = d.jumlah_barang;
-    int stok_baru;
-    char *jenis_transaksi;
-    
-    if (pilihan_transaksi == 1) {
-        stok_baru = stok_awal + jumlah;
-        jenis_transaksi = "MASUK";
-    } else {
-        stok_baru = stok_awal - jumlah;
-        jenis_transaksi = "KELUAR";
-    }
-    
+void transaksi() {
+    int pil, id, qty;
     clear();
-    printf("========================================\n");
-    printf("         RINGKASAN TRANSAKSI\n");
-    printf("========================================\n");
-    printf("Jenis Transaksi : %s\n", jenis_transaksi);
-    printf("ID Produk       : %d\n", d.nomor);
-    printf("Nama Barang     : %s\n", d.nama_barang);
-    printf("Stok Awal       : %d\n", stok_awal);
-    printf("Jumlah          : %d\n", jumlah);
-    printf("Stok Baru       : %d\n", stok_baru);
-    printf("========================================\n");
-
-    printf("\nKonfirmasi transaksi? (Y/N): ");
-    char konfirmasi;
-    scanf(" %c", &konfirmasi);
-
+    title_menu("TRANSAKSI PRODUK");
     
-    if (konfirmasi != 'Y' && konfirmasi != 'y') {
-        fclose(pf);
-        printf("Transaksi dibatalkan.\n");
-        pause();
-        return;
-    }
+    printf("1. Produk Masuk (Tambah Stok)\n");
+    printf("2. Produk Keluar (Kurangi Stok)\n");
+    printf("0. Kembali\n");
+    printf("Pilihan: ");
     
-    // Update file
-    rewind(pf);
-    FILE *temp = fopen("temp.txt", "w");
-    if (!temp) {
-        fclose(pf);
-        printf("Gagal membuat file sementara!\n");
-        pause();
-        return;
-    }
+    if (scanf("%d", &pil) != 1) {printf("Input tidak valid!\n");pause();return;}
+    if (pil == 0) return;
+    if (pil != 1 && pil != 2) { printf("Pilihan tidak valid!\n"); pause();return;}
     
-    int diupdate = 0;
-    rewind(pf);
-    while (fgets(line, sizeof(line), pf)) {
-        int current_id;
-        sscanf(line, "%d", &current_id);
-        
-        if (current_id == id && !diupdate) {
-            fprintf(temp, "%d|%s|%d\n", d.nomor, d.nama_barang, stok_baru);
-            diupdate = 1;
-        } else {
-            fputs(line, temp);
+    printf("ID Produk: ");
+    if (scanf("%d", &id) != 1) { printf("Input tidak valid!\n"); pause();return;}
+    
+    Produk data[MAX_BARANG];
+    int n = bacaProduk(data);
+    int idx = -1;
+    int i;
+    for (i = 0; i < n; i++) {
+        if (data[i].id == id) { 
+            idx = i; 
+            break; 
         }
     }
     
-    fclose(pf);
-    fclose(temp);
+    if (idx == -1) {  printf("ID %05d tidak ditemukan!\n", id); pause(); return; }
     
-    remove("StokBarang.txt");
-    rename("temp.txt", "StokBarang.txt");
+    printf("\nProduk: %s\n", data[idx].nama);
+    printf("Stok saat ini: %d\n", data[idx].stok);
     
-    printf("\n--- TOTAL TRANSAKSI HARI INI ---\n");
-    printf("Transaksi %s: %d unit\n", jenis_transaksi, jumlah);
+    printf("Jumlah: ");
+    if (scanf("%d", &qty) != 1) { printf("Input tidak valid!\n"); pause(); return;}
+    getchar();
     
-    // Log
-    time_t now = time(NULL);
-    struct tm *local = localtime(&now);
-    FILE *log_file = fopen("log_transaksi.txt", "a");
-    if (log_file) {
-        fprintf(log_file, "%04d-%02d-%02d %02d:%02d:%02d | %s | ID:%d | %s | Jumlah:%d | Stok_Awal:%d | Stok_Akhir:%d\n",
-                local->tm_year + 1900, local->tm_mon + 1, local->tm_mday,
-                local->tm_hour, local->tm_min, local->tm_sec,
-                jenis_transaksi, d.nomor, d.nama_barang, jumlah, stok_awal, stok_baru);
-        fclose(log_file);
-    }
+    if (qty <= 0) { printf("Jumlah harus positif!\n");pause();return;}
+
+    if (pil == 2 && qty > data[idx].stok) { printf("Stok tidak cukup! Stok tersedia: %d\n", data[idx].stok); pause(); return;}
     
-    printf("\nTransaksi berhasil dicatat!\n");
+    printf("\n=== RINGKASAN TRANSAKSI ===\n");
+    printf("Produk: %s\n", data[idx].nama);
+    printf("Stok awal: %d\n", data[idx].stok);
+    printf("Jumlah: %d\n", qty);
     
-    printf("\n--- STATUS ---\n");
-    printf("Stok %s sekarang: %d unit\n", d.nama_barang, stok_baru);
+    if (pil == 1) {
+        printf("Operasi: Penambahan stok\n");
+        printf("Stok akhir: %d\n", data[idx].stok + qty);
+        data[idx].stok += qty;
+    } else {
+        printf("Operasi: Pengurangan stok\n");
+        printf("Stok akhir: %d\n", data[idx].stok - qty);
+        data[idx].stok -= qty;}
     
+    printf("\nKonfirmasi transaksi? (y/n): ");
+    char konfirm = getchar();
+    getchar();
+    
+    if (konfirm == 'y' || konfirm == 'Y') {
+        simpanProduk(data, n);
+        // Log 
+        FILE* log = fopen(LOG_FILE, "a");
+        if (log) {
+            time_t now = time(NULL);
+            struct tm* t = localtime(&now);
+            fprintf(log, "%04d-%02d-%02d %02d:%02d | %s | ID:%05d | %s | %d | %d\n",
+                    t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+                    t->tm_hour, t->tm_min,
+                    (pil == 1) ? "MASUK" : "KELUAR",
+                    data[idx].id, data[idx].nama, qty, data[idx].stok);
+            fclose(log);
+        }
+        printf("Transaksi berhasil dicatat!\n");
+    } else {printf("Transaksi dibatalkan!\n");}
     pause();
 }

@@ -21,10 +21,7 @@ int load_user(User *u) {
     
     FILE *fp = fopen(USER_DB_FILE, "rb");
     if (!fp) return 0;
-    if (fread(u, sizeof(User), 1, fp) != 1) {
-        fclose(fp);
-        return 0;
-    }
+    if (fread(u, sizeof(User), 1, fp) != 1) { fclose(fp); return 0;}
     fclose(fp);
     return 1;
 }
@@ -33,10 +30,7 @@ int save_user(const User *u) {
     
     FILE *fp = fopen(USER_DB_FILE, "wb");
     if (!fp) return 0;
-    if (fwrite(u, sizeof(User), 1, fp) != 1) {
-        fclose(fp);
-        return 0;
-    }
+    if (fwrite(u, sizeof(User), 1, fp) != 1) {fclose(fp); return 0;}
     fclose(fp);
     return 1;
 }
@@ -58,18 +52,13 @@ void register_user() {
 
     if (save_user(&u)) {
         printf("Registrasi berhasil. \n");
-    } else {
-        printf("Gagal registrasi. Silahkan cek batasan file.\n");
-    }
+    } else {printf("Gagal registrasi. Silahkan cek batasan file.\n");}
 }
 
 int login_user() {
     
     User u;
-    if (!load_user(&u)) {
-        printf("No user registered yet. Please register first.\n");
-        return 0;
-    }
+    if (!load_user(&u)) { printf("Tidak ada user teregistrasi, sialhkan registras.\n"); return 0;}
     char uname[MAXNAME], pass[MAXPASS];
     clear();
     title_menu("LOGIN USER");
@@ -81,12 +70,9 @@ int login_user() {
     trim_newline(pass);
 
     if (strcmp(uname, u.username) == 0 && strcmp(pass, u.password) == 0) {
-        printf("Login successful. Welcome, %s!\n", u.username);
+        printf("Login Berhasil. Selamat datang, %s!\n", u.username);
         return 1;
-    } else {
-        printf("Login failed: wrong username or password.\n");
-        return 0;
-    }
+    } else { printf("Login Gagal.\n");return 0;}
 }
 
 int keamanan() {
@@ -97,54 +83,27 @@ int keamanan() {
         clear();
         if (!hasUser) {
             menu3("Selamat Datang", "Login", "Registrasi", "Exit");
-        } else {
-            menu3("Selamat Datang", "Login", "Ubah Data", "Exit");
-        }
+        } else { menu3("Selamat Datang", "Login", "Ubah Data", "Exit");}
 
         char line[16];
         if (!fgets(line, sizeof line, stdin)) break;
         choice = atoi(line);
 
-        if (!hasUser) {
             switch (choice) {
                 case 1:
-                    if (login_user()) {
-                        printf("Exiting after successful login.\n");
-                        return 0; 
-                    }
+                    if (login_user()) {printf("Keluar setelah berhasil login.\n");return 0;}
                     break;
                 case 2:
                     register_user();
                     hasUser = load_user(&db); 
                     break;
                 case 3:
-                    printf("Exiting.\n");
+                    printf("keluar.\n");
                     return 0;
                 default:
-                    printf("Invalid choice.\n");
+                    printf("Pilihan tidak ada.\n");
                     break;
-            }
-        } else {
-            switch (choice) {
-                case 1:
-                    if (login_user()) {
-                        printf("Exiting after successful login.\n");
-                        return 0;
-                    }
-                    break;
-                case 2:
-                
-                    register_user();
-                    hasUser = load_user(&db); // reload
-                    break;
-                case 3:
-                    printf("Exiting.\n");
-                    return 0;
-                default:
-                    printf("Invalid choice.\n");
-                    break;
-            }
-        }
+                }
     }
     return 0;
 }

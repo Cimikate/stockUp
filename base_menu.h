@@ -7,9 +7,12 @@
 #define CORNER_BL 192
 #define CORNER_BR 217
 
-
-void clear(){
-    system("cls");
+void clear() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        system("clear");
+    #endif
 }
 
 void gotoxy(int x, int y){

@@ -20,7 +20,7 @@ int main(){
                 tambahProduk();
                 break;
             case 3:
-                produkTransaksi();
+                transaksi();
                 break;
             case 4:
                 editProduk();;
