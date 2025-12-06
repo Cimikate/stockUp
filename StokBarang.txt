@@ -1,0 +1,49 @@
+10201|You C1000|20
+10101|Indomie|15
+10102|Chitato|20
+10103|Mie Sedap|25
+10104|Samyang|12
+10202|Aqua|30
+10203|Teh Botol|18
+10301|Cheetos|22
+10302|Qtela|14
+10401|Beras|50
+10402|Gula|40
+10501|Charger|8
+10601|Kaos|15
+10701|Pulpen|100
+10801|Paracetamol|30
+10901|Bedak|25
+11001|Sapu|20
+11101|Novel|18
+11201|Lego|12
+11301|Sepatu Sport|10
+11401|Ban|5
+11501|Pupuk|60
+11601|Pakan|45
+11701|Jaring|8
+11801|Palu|15
+11901|Meja|7
+12001|Joran|12
+10105|Sarimi|35
+10106|Supermi|28
+10107|Pop Mie|17
+10108|Mie Gaga|22
+10109|Mie ABC|19
+10110|Mie Gelas|14
+10204|Le Minerale|32
+10205|Vit|26
+10206|Club|21
+10207|Floridina|19
+10208|Mizone|16
+10209|Pocari|23
+10210|Ultra Milk|29
+10303|Pringles|18
+10304|Taro|13
+10305|Roma|24
+10306|Better|17
+10307|Nabati|22
+10308|Oreo|31
+10309|Beng-beng|15
+10310|Cheetos|20
+10403|Garam|55

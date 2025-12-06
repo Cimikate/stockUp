@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
-// #include "base_menu.h"
 #define USER_DB_FILE "user.dat"
 #define MAXNAME 32
 #define MAXPASS 32
@@ -12,7 +11,6 @@ typedef struct {
     char password[MAXPASS];
 } User;
 
-// utility: trim trailing newline from fgets
 static void trim_newline(char *s) {
     size_t len = strlen(s);
     if (len == 0) return;
@@ -31,7 +29,6 @@ int load_user(User *u) {
     return 1;
 }
 
-// save user to file, return 1 on success
 int save_user(const User *u) {
     
     FILE *fp = fopen(USER_DB_FILE, "wb");
@@ -47,7 +44,8 @@ int save_user(const User *u) {
 void register_user() {
     
     User u;
-    printf("=== Registrasi Pengguna Baru ===\n");
+    clear();
+    title_menu("REGISTRASI USER");
     printf("Masukan Name: ");
     if (!fgets(u.username, sizeof u.username, stdin)) return;
     trim_newline(u.username);
@@ -73,7 +71,8 @@ int login_user() {
         return 0;
     }
     char uname[MAXNAME], pass[MAXPASS];
-    printf("=== Login ===\n");
+    clear();
+    title_menu("LOGIN USER");
     printf("Username: ");
     if (!fgets(uname, sizeof uname, stdin)) return 0;
     trim_newline(uname);
@@ -95,12 +94,10 @@ int keamanan() {
     User db;
     int hasUser = load_user(&db);
     while(1) {
-        cls();
+        clear();
         if (!hasUser) {
-            // no user yet: show Register option
             menu3("Selamat Datang", "Login", "Registrasi", "Exit");
         } else {
-            // user exists: hide Register (show change data instead)
             menu3("Selamat Datang", "Login", "Ubah Data", "Exit");
         }
 
@@ -113,12 +110,12 @@ int keamanan() {
                 case 1:
                     if (login_user()) {
                         printf("Exiting after successful login.\n");
-                        return 0; // exit function on success
+                        return 0; 
                     }
                     break;
                 case 2:
                     register_user();
-                    hasUser = load_user(&db); // refresh state after registration
+                    hasUser = load_user(&db); 
                     break;
                 case 3:
                     printf("Exiting.\n");
@@ -128,7 +125,6 @@ int keamanan() {
                     break;
             }
         } else {
-            // hasUser == 1
             switch (choice) {
                 case 1:
                     if (login_user()) {
@@ -137,7 +133,7 @@ int keamanan() {
                     }
                     break;
                 case 2:
-                    // allow changing username/password (acts like re-register)
+                
                     register_user();
                     hasUser = load_user(&db); // reload
                     break;
