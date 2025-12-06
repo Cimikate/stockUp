@@ -61,9 +61,14 @@ void tambahProduk() {
     
     clear();
     title_menu("TAMBAH PRODUK BARU");
-    
-    // Input kategori
-    printf("Kategori (0-99): ");
+    printf(" Code Kategori\n");
+    printf(
+        "  1:  Makanan       2:  Minuman       3:  Snack         4:  Bahan Pokok   5:  Elektronik\n"
+        "  6:  Pakaian       7:  Alat Tulis    8:  Obat          9:  Kosmetik     10:  Alat Rumah\n"
+        " 11:  Buku         12:  Mainan       13:  Olahraga     14:  Kendaraan    15:  Pertanian\n"
+        " 16:  Peternakan   17:  Perikanan    18:  Perkakas     19:  Furniture    20:  Memancing\n 21-99: Lainnya\n\n"
+    );
+    printf("Masukkan kode kategori (0-99): ");
     if (scanf("%d", &kategori) != 1) {
         printf("Input tidak valid!\n");
         while (getchar() != '\n');  // Clear buffer
