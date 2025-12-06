@@ -99,6 +99,7 @@ int keamanan() {
                     break;
                 case 3:
                     printf("keluar.\n");
+                    exit(0);
                     return 0;
                 default:
                     printf("Pilihan tidak ada.\n");

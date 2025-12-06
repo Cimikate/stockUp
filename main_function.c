@@ -99,7 +99,7 @@ void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
         }
         
         // Navigasi
-        printf("\n[N]ext  [P]rev  [S]earch  [Q]uit");
+        printf("\n[N]ext  [P]rev  [Q]uit");
         if (totalPage > 1) {
             printf("  [G]oto page");
         }
@@ -119,55 +119,6 @@ void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
             case 'P':
                 if (page > 0) page--;
                 break;
-                
-            case 'S': {
-                // Pencarian langsung
-                char kata[40];
-                printf("Cari (ID/nama): ");
-                fgets(kata, sizeof(kata), stdin);
-                kata[strcspn(kata, "\n")] = 0;
-                
-                if (strlen(kata) == 0) break;
-                
-                // Filter hasil
-                Produk hasil[MAX_BARANG];
-                int hasilCnt = 0;
-                
-                for (i = 0; i < n; i++) {
-                    char idStr[10];
-                    sprintf(idStr, "%d", data[i].id);
-                    
-                    // Salin dan konversi ke lowercase untuk pencarian case-insensitive
-                    char namaLower[40], kataLower[40];
-                    strcpy(namaLower, data[i].nama);
-                    strcpy(kataLower, kata);
-                    int j;
-                    for (j = 0; namaLower[j]; j++) namaLower[j] = tolower(namaLower[j]);
-                    for (j = 0; kataLower[j]; j++) kataLower[j] = tolower(kataLower[j]);
-                    
-                    if (strstr(idStr, kata) != NULL || 
-                        strstr(namaLower, kataLower) != NULL) {
-                        hasil[hasilCnt++] = data[i];
-                    }
-                }
-                
-                if (hasilCnt == 0) {
-                    printf("\nTidak ditemukan!\n");
-                    pause();
-                } else {
-                    printf("\nDitemukan %d hasil:\n", hasilCnt);
-                    for (i = 0; i < hasilCnt && i < 20; i++) {
-                        int k = kategoriDariID(hasil[i].id);
-                        printf("ID: %05d | Kategori: %s | Nama: %s | Stok: %d\n", 
-                               hasil[i].id, kategori[k], hasil[i].nama, hasil[i].stok);
-                    }
-                    if (hasilCnt > 20) {
-                        printf("... dan %d hasil lainnya\n", hasilCnt - 20);
-                    }
-                    pause();
-                }
-                break;
-            }
                 
             case 'G':
                 if (totalPage > 1) {
