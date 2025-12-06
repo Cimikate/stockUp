@@ -82,11 +82,9 @@ void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
         title_menu(judul);
         printf("Halaman %d/%d (Total: %d data)\n\n", page + 1, totalPage, n);
         
-        // Header tabel
         printf("%-6s | %-13s | %-25s | %s\n", "ID", "Kategori", "Nama Produk", "Stok");
         printf("--------------------------------------------------------------\n");
         
-        // Tampilkan data per halaman
         int start = page * PER_PAGE;
         int end = start + PER_PAGE;
         if (end > n) end = n;
@@ -210,47 +208,6 @@ void tambahProduk() {
     printf("Nama: %s\n", b.nama);
     printf("Stok: %d\n", b.stok);
     pause();
-}
-
-void cariProduk() {
-    char keyword[40];
-    clear();
-    title_menu("CARI PRODUK");
-    
-    printf("Masukkan ID atau nama: ");
-    fgets(keyword, sizeof(keyword), stdin);
-    keyword[strcspn(keyword, "\n")] = 0;
-    
-    if (strlen(keyword) == 0) {printf("Input kosong!\n");pause();return;}
-    
-    Produk data[MAX_BARANG];
-    int n = bacaProduk(data);
-    Produk hasil[MAX_BARANG];
-    int hasilCnt = 0;
-    
-    for (i = 0; i < n; i++) {
-        char id_str[10];
-        sprintf(id_str, "%d", data[i].id);
-        
-        // Salin string untuk lowercase
-        char nama_lower[40], keyword_lower[40];
-        strcpy(nama_lower, data[i].nama);
-        strcpy(keyword_lower, keyword);
-        
-        // Convert to lowercase
-        int j;
-        for (j = 0; nama_lower[j]; j++) nama_lower[j] = tolower(nama_lower[j]);
-        for (j = 0; keyword_lower[j]; j++) keyword_lower[j] = tolower(keyword_lower[j]);
-        
-        if (strstr(id_str, keyword) != NULL || strstr(nama_lower, keyword_lower) != NULL) {
-            hasil[hasilCnt++] = data[i];
-        }
-    }
-    
-    if (hasilCnt == 0) {
-        printf("\nTidak ditemukan produk dengan kata kunci: %s\n", keyword);
-        pause();
-    } else { tampilDenganPaging(hasil, hasilCnt, 1, "HASIL PENCARIAN");}
 }
 
 void editProduk() {
