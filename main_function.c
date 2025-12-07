@@ -34,7 +34,6 @@ int kategoriDariID(int id) {
     return (id / 100) % 100; 
 }
 
-// Operasi file dengan array statis
 int bacaProduk(Produk arr[]) {
     FILE* f = fopen(NAMA_FILE, "r");
     if (!f) return 0;
@@ -56,21 +55,12 @@ void simpanProduk(Produk arr[], int n) {
     fclose(f);
 }
 
-// Fungsi untuk sorting
 int bandingID(const void *a, const void *b) {
     Produk *p1 = (Produk *)a;
     Produk *p2 = (Produk *)b;
     return p1->id - p2->id;
 }
 
-// Fungsi untuk lowercase
-void keLower(char *str) {
-    for (i = 0; str[i]; i++) {
-        str[i] = tolower(str[i]);
-    }
-}
-
-// Fungsi tampil produk dengan perhalaman
 void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
     if (sort) {qsort(data, n, sizeof(Produk), bandingID);}
     
@@ -96,7 +86,6 @@ void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
                    data[i].id, kategori[k], data[i].nama, data[i].stok);
         }
         
-        // Navigasi
         printf("\n[N]ext  [P]rev  [Q]uit");
         if (totalPage > 1) {
             printf("  [G]oto page");
@@ -144,7 +133,6 @@ void tampilDenganPaging(Produk data[], int n, int sort, const char *judul) {
     }
 }
 
-// Modul utama tampil produk
 void tampilProduk() {
     Produk data[MAX_BARANG];
     int n = bacaProduk(data);
@@ -157,8 +145,11 @@ void tambahProduk() {
     title_menu("TAMBAH PRODUK");
     Produk b;
     int kode;
+    printf("Kode Kategori:\n");
+    printf("1: Makanan, 2: Minuman, 3: Snack, 4: Bahan Pokok,\n");printf("5: Elektronik, 6: Pakaian, 7: Alat Tulis, 8: Obat,\n");
+    printf("9: Kosmetik, 10: Alat Rumah, 11: Buku, 12: Mainan,\n");printf("13: Olahraga, 14: Kendaraan, 15: Pertanian, 16: Peternakan,\n");
+    printf("17: Perikanan, 18: Perkakas, 19: Furniture, 20: Memancing, 0: Lainnya\n");
     printf("Kategori Produk:\n");
-    // Tampilkan daftar kategori lengkap (0..20)
     int k;
     for (k = 0; k <= 20; k++) {
         printf("%2d: %-13s", k, kategori[k]);
@@ -194,11 +185,7 @@ void tambahProduk() {
     
     // Simpan
     FILE* f = fopen(NAMA_FILE, "a");
-    if (!f) {
-        printf("Gagal membuka file!\n");
-        pause();
-        return;
-    }
+    if (!f) { printf("Gagal membuka file!\n"); pause(); return;}
     fprintf(f, "%d|%s|%d\n", b.id, b.nama, b.stok);
     fclose(f);
     
@@ -222,7 +209,7 @@ void editProduk() {
     Produk data[MAX_BARANG];
     int n = bacaProduk(data);
     int idx = -1;
-    i;
+    int i;
     for (i = 0; i < n; i++) {
         if (data[i].id == id) { 
             idx = i; 
@@ -287,10 +274,7 @@ void hapusProduk() {
     title_menu("HAPUS PRODUK");
     
     printf("ID Produk yang akan dihapus: ");
-    if (scanf("%d", &id) != 1) {
-        printf("Input tidak valid!\n");
-        pause();
-        return;}
+    if (scanf("%d", &id) != 1) {printf("Input tidak valid!\n");pause();return;}
     getchar();
     
     Produk data[MAX_BARANG];
@@ -307,11 +291,7 @@ void hapusProduk() {
         baru[j++] = data[i];
     }
     
-    if (idx == -1) { 
-        printf("ID %05d tidak ditemukan!\n", id); 
-        pause(); 
-        return; 
-    }
+    if (idx == -1) { printf("ID %05d tidak ditemukan!\n", id); pause(); return; }
     
     printf("\nData yang akan dihapus:\n");
     printf("ID: %05d\n", data[idx].id);
