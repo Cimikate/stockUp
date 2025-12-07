@@ -145,10 +145,6 @@ void tambahProduk() {
     title_menu("TAMBAH PRODUK");
     Produk b;
     int kode;
-    printf("Kode Kategori:\n");
-    printf("1: Makanan, 2: Minuman, 3: Snack, 4: Bahan Pokok,\n");printf("5: Elektronik, 6: Pakaian, 7: Alat Tulis, 8: Obat,\n");
-    printf("9: Kosmetik, 10: Alat Rumah, 11: Buku, 12: Mainan,\n");printf("13: Olahraga, 14: Kendaraan, 15: Pertanian, 16: Peternakan,\n");
-    printf("17: Perikanan, 18: Perkakas, 19: Furniture, 20: Memancing, 0: Lainnya\n");
     printf("Kategori Produk:\n");
     int k;
     for (k = 0; k <= 20; k++) {
