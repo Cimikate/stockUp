@@ -1,4 +1,4 @@
-10201|You C1000|20
+10201|You C1000|80
 10101|Indomie|15
 10102|Chitato|20
 10103|Mie Sedap|25
@@ -7,7 +7,7 @@
 10203|Teh Botol|18
 10301|Cheetos|22
 10302|Qtela|14
-10401|Beras|50
+10401|Beras|30
 10402|Gula|40
 10501|Charger|8
 10601|Kaos|15
@@ -46,4 +46,6 @@
 10308|Oreo|31
 10309|Beng-beng|15
 10310|Cheetos|20
-10403|Garam|55
+10403|Garam|5510111
+10001|test|60
+10002|coba|120

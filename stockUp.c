@@ -3,8 +3,12 @@
 #include <windows.h>
 #include "base_menu.h"
 
+
+
+
 int main(){
     int choice;
+    system("color 1F");
     
     keamanan();
     do {
